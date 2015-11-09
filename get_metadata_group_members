@@ -1,0 +1,54 @@
+/* get all groups and members of those groups */
+
+data groupmembers;
+  * Set up attributes for all the varibales ;
+  attrib uriGrp        length=$64;
+  attrib uriMem        length=$64;
+  attrib GroupId       length=$64;
+  attrib GroupName     length=$64;
+  attrib Group_or_Role length=$64;
+  attrib GroupDesc     length=$256;
+  attrib MemberName    length=$64;
+  attrib MemberType    length=$64;
+
+  attrib rcGrp rcMem rc i j length=3;
+
+  * Initialize all the variables, dropping intermediate one;
+  call missing (of _all_);
+  drop uriGrp uriMem rcGrp rcMem rc i j;
+
+  * Group Iterator ;
+  i=1; 
+  * Grab the URI for the first Group ;
+  rcGrp=metadata_getnobj("omsobj:IdentityGroup?@id contains '.'",i,uriGrp); 
+  * If Group found, enter do loop ;
+  do while (rcGrp>0);
+    call missing (rcMem,uriMem,GroupId,GroupName,Group_or_Role,MemberName,MemberType);
+	* Grab info of the Group ;
+    rc = metadata_getattr(uriGrp,"Id",GroupId);
+    rc = metadata_getattr(uriGrp,"Name",GroupName);
+  	rc = metadata_getattr(uriGrp,"PublicType",Group_or_Role);
+  	rc = metadata_getattr(uriGrp,"Desc",GroupDesc);
+
+    * Member Iterator ;
+  	j=1;
+  	* Grab the uri for the Group Members ;
+  	rcMem = metadata_getnasn(uriGrp,"MemberIdentities",j,uriMem);
+	
+    * If Member found enter do loop ;
+    if rcMem > 0 then do while (rcMem>0);
+      call missing (MemberName,MemberType);
+      * Grab info of the Members ;
+      rc = metadata_getattr(uriMem,"Name",MemberName);
+      rc = metadata_getattr(uriMem,"PublicType",MemberType);
+      output;
+      * Iterate to the next Members  ;
+      j+1;
+      rcMem = metadata_getnasn(uriGrp,"MemberIdentities",j,uriMem);
+    end;
+    else output;
+    * Iterate to the next Group ;
+    i+1;
+    rcGrp=metadata_getnobj("omsobj:IdentityGroup?@id contains '.'",i,uriGrp); 
+  end;
+run;
