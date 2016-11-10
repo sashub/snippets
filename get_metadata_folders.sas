@@ -1,0 +1,20 @@
+  data paths (keep=tree_path uri treetype);
+    length tree_path $500 uri tree_uri parent_uri parent_name TreeType PublicType $256;
+    n=1;
+    do while(metadata_getnobj("omsobj:Tree?@PublicType = 'Folder'",n,uri)>0);
+    /* code for getting the metadata path */
+      rc=metadata_getattr(uri,"Name",tree_path);
+      rc=metadata_getattr(uri,"TreeType",TreeType);
+      rc=metadata_getattr(uri,"PublicType",PublicType);
+      tree_uri=uri;
+      do while (metadata_getnasn(tree_uri,"ParentTree",1,parent_uri)>0);
+        rc=metadata_getattr(parent_uri,"Name",parent_name);
+        tree_path=strip(parent_name)||'/'||strip(tree_path);
+        tree_uri=parent_uri;
+      end;
+      tree_path='/'||strip(tree_path);
+      output;
+      n+1;
+    end;
+  run;
+  proc sort; by tree_path;run;
